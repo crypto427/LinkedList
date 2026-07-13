@@ -1,1 +1,1 @@
-A general-purpose linked list data structure utility
+A general-purpose linked list data structure implemented in C
