@@ -14,6 +14,8 @@ typedef struct LinkedList {
 } LinkedList;
 
 int init_linked_list(LinkedList *list) {
+    if (!list)
+        return -1;
     list->size = 0;
     list->head = NULL;
     list->tail = NULL;
@@ -21,7 +23,12 @@ int init_linked_list(LinkedList *list) {
 }
 
 int add(void *item, LinkedList *list) {
+    if (!list)
+        return -1;
+    
     Node *node = malloc(sizeof(Node));
+    if (!node)
+        return -1;
     node->data = item;
     node->next = NULL;
     if (list->size == 0) {
@@ -29,7 +36,6 @@ int add(void *item, LinkedList *list) {
     }
     else {
     	list->tail->next = node;
-    	printf("Here else.");
     }
     list->tail = node;
     list->size++;
@@ -37,9 +43,11 @@ int add(void *item, LinkedList *list) {
 }
 
 Node *get(int index, LinkedList *list) {
+    if (!list || index < 0 || index >= list->size)
+        return NULL;
     Node *on = list->head;
     int i = 0;
-    while(i < index) {
+    while(i < index && on != NULL) {
         on = on->next;
         i++;
     }
@@ -48,24 +56,31 @@ Node *get(int index, LinkedList *list) {
     return on;
 }
 
-int deleteList(LinkedList *list) {
+void deleteList(LinkedList *list, void (*free_data)(void *)) {
+    if (!list)
+        return;
     Node *on = list->head;
     Node *next;
     while(on != NULL){
          next = on->next;
-         free(on->data);
+         if (free_data && on->data) {
+            free_data(on->data);
+         }
          free(on);
          on = next;
          list->size--;
     }
-    return 0;
+    
+    list->head = NULL;
+    list->tail = NULL;
+    list->size = 0;
 }
 
 void printList(LinkedList *list) {
     Node *on = list->head;
     printf("Printing list:\n");
     while(on != NULL) {
-        printf("[data: %d ]->next => ", *(int*)on->data); // Temporary, fix this immediately
+        printf("[data: %d ]->next => ", *(int*)on->data); // Temporary, tightly coupled
         on = on->next;
     }
     printf("NULL \n");
@@ -77,16 +92,23 @@ int main(int argc, char* argv[]) {
     init_linked_list(&list);
     int *myInt = malloc(sizeof(int));
     if(myInt == NULL) {
-        deleteList(&list);
+        deleteList(&list, free);
         return -1;
     }
     *myInt = 50;
-    add((void*)myInt, &list);
+    if (add(myInt, &list) == -1) {
+        free(myInt);
+        return -1;
+    }
     printf("LinkedList size: %d\n", list.size);
-    int *retrieved = (int*)get(0, &list)->data;
-    printf("LL(0) = %d\n", *retrieved); 
+    Node *node = get(0, &list);
+    int *retrieved = NULL;
+    if (node) {
+        retrieved = node->data;
+        printf("LL(0) = %d\n", *retrieved);
+    } 
     printList(&list);
-    deleteList(&list);
+    deleteList(&list, free);
     printf("LinkedList size: %d\n", list.size);
     return 0;
 }
